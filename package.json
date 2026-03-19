@@ -1,7 +1,10 @@
 {
     "name": "sanket-whatsapp-bot",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "telegram-bot.js",
+    "scripts": {
+        "start": "node telegram-bot.js"
+    },
     "dependencies": {
         "@supabase/supabase-js": "^2.39.0",
         "date-fns": "^2.30.0",
