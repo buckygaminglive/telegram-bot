@@ -1,0 +1,17 @@
+{
+    "name": "sanket-whatsapp-bot",
+    "version": "1.0.0",
+    "main": "index.js",
+    "dependencies": {
+        "@supabase/supabase-js": "^2.39.0",
+        "date-fns": "^2.30.0",
+        "dotenv": "^16.3.1",
+        "jspdf": "^4.2.0",
+        "jspdf-autotable": "^5.0.7",
+        "node-cron": "^4.2.1",
+        "node-telegram-bot-api": "^0.67.0",
+        "pdfkit": "^0.18.0",
+        "qrcode-terminal": "^0.12.0",
+        "whatsapp-web.js": "^1.23.0"
+    }
+}
