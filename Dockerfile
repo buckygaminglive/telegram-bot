@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y \
     libx11-xcb1 \
     libxcb1 \
     libxcomposite1 \
-    libcursor1 \
     libxdamage1 \
     libxext6 \
     libxfixes3 \
