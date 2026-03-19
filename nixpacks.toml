@@ -1,0 +1,4 @@
+[providers.node]
+installCommand = 'npm install'
+startCommand = 'node telegram-bot.js'
+nodeVersion = '20'
