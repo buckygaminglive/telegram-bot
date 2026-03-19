@@ -13,6 +13,10 @@ const MINIAPP_URL = process.env.MINIAPP_URL || 'https://buckygaminglive.github.i
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const registerCode = process.env.REGISTER_CODE || 'sanket2026';
 
+// Start a dummy server for Railway health checks
+try { require('./dummy-server.js'); } catch(e) {}
+
+
 // --- Whitelist & Language Persistence ---
 const whitelistFile = path.join(__dirname, 'whitelist.json');
 const langFile = path.join(__dirname, 'languages.json');
