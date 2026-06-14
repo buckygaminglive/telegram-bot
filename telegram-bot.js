@@ -20,6 +20,7 @@ try { require('./dummy-server.js'); } catch(e) {}
 // --- Whitelist & Language Persistence ---
 const whitelistFile = path.join(__dirname, 'whitelist.json');
 const langFile = path.join(__dirname, 'languages.json');
+const muteGhostsFile = path.join(__dirname, 'muteGhosts.json');
 
 function loadJSON(file) {
     try { if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { }
@@ -29,6 +30,7 @@ function saveJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null
 
 let allowedIds = loadJSON(whitelistFile);
 let userLangs = loadJSON(langFile);
+let mutedGhosts = loadJSON(muteGhostsFile);
 
 // State machine for interactive flows (e.g., changing prices)
 // Format: { chatId: { action: 'awaiting_price', productId: '1', productName: 'Chicken' } }
@@ -58,6 +60,9 @@ const T = {
         btnSummary: '📊 Full Summary',
         btnChangePrice: '✏️ Change Price',
         btnTodayBills: '🧾 Today\'s Bills PDF',
+        btnGhostBills: '👻 Ghost Sales PDF',
+        btnMute: '🔕 Mute Alerts',
+        btnUnmute: '🔔 Unmute Alerts',
         btnLang: '🇮🇳 मराठी',
         btnDashboard: '🤖 Bot Menu',
 
@@ -117,6 +122,9 @@ const T = {
         btnSummary: '📊 संपूर्ण सारांश',
         btnChangePrice: '✏️ भाव बदला',
         btnTodayBills: '🧾 आजची बिले PDF',
+        btnGhostBills: '👻 घोस्ट सेल PDF',
+        btnMute: '🔕 अलर्ट बंद करा',
+        btnUnmute: '🔔 अलर्ट चालू करा',
         btnLang: '🇬🇧 English',
         btnDashboard: '🤖 बॉट मेनू',
 
@@ -191,7 +199,8 @@ async function sendDashboardMenu(id, lang) {
         [{ text: l.btnSales, callback_data: 'CMD_SALES' }, { text: l.btnWeight, callback_data: 'CMD_WEIGHT' }],
         [{ text: l.btnUnpaid, callback_data: 'CMD_UNPAID' }, { text: l.btnGhosts, callback_data: 'CMD_GHOSTS' }],
         [{ text: l.btnSummary, callback_data: 'CMD_SUMMARY' }],
-        [{ text: l.btnTodayBills, callback_data: 'CMD_TODAYBILLS' }],
+        [{ text: l.btnTodayBills, callback_data: 'CMD_TODAYBILLS' }, { text: l.btnGhostBills, callback_data: 'CMD_GHOST_BILLS' }],
+        [{ text: mutedGhosts[id] ? l.btnUnmute : l.btnMute, callback_data: 'CMD_TOGGLE_MUTE' }],
         [{ text: l.btnChangePrice, callback_data: 'CMD_CHANGEPRICE' }],
         [{ text: l.btnLang, callback_data: 'CMD_LANG' }]
     ];
@@ -374,6 +383,34 @@ bot.on('callback_query', async (query) => {
             }
             return;
         }
+        else if (data === 'CMD_GHOST_BILLS') {
+            const targetDate = new Date();
+            bot.sendMessage(id, lang === 'mr' ? `⏳ घोस्ट सेल PDF तयार करत आहे...` : `⏳ Generating ghost sales PDF...`);
+            try {
+                const pdfBuffer = await generateGhostBillsPDFBuffer(targetDate);
+                const filename = `Sanket-Ghosts-${format(targetDate, 'dd-MMM-yyyy')}.pdf`;
+                await bot.sendDocument(id, pdfBuffer, {
+                    caption: `👻 ${lang === 'mr' ? 'घोस्ट सेल' : "Ghost Sales"} — ${format(targetDate, 'dd MMM yyyy')}`
+                }, {
+                    filename,
+                    contentType: 'application/pdf'
+                });
+            } catch (err) {
+                bot.sendMessage(id, lang === 'mr' ? '❌ PDF तयार करण्यात अयशस्वी.' : '❌ Failed to generate PDF.', backToMenuButton(lang));
+                console.error(err);
+            }
+            return;
+        }
+        else if (data === 'CMD_TOGGLE_MUTE') {
+            mutedGhosts[id] = !mutedGhosts[id];
+            saveJSON(muteGhostsFile, mutedGhosts);
+            const msgText = mutedGhosts[id] 
+                ? (lang === 'mr' ? '🔕 घोस्ट सेल अलर्ट बंद केले आहेत.' : '🔕 Ghost sale alerts are now MUTED.')
+                : (lang === 'mr' ? '🔔 घोस्ट सेल अलर्ट चालू केले आहेत.' : '🔔 Ghost sale alerts are now UNMUTED.');
+            bot.sendMessage(id, msgText);
+            await sendDashboardMenu(id, lang);
+            return;
+        }
 
         if (response) {
             bot.sendMessage(id, response, { parse_mode: 'Markdown', ...backToMenuButton(lang) });
@@ -464,10 +501,12 @@ supabase
         const wt = g.max_weight || 0;
 
         allowedIds.forEach(id => {
-            const l = T[getLang(id)];
-            bot.sendMessage(id, l.ghostAlert(date, time, wt), { parse_mode: 'Markdown' }).catch(console.error);
+            if (!mutedGhosts[id]) {
+                const l = T[getLang(id)];
+                bot.sendMessage(id, l.ghostAlert(date, time, wt), { parse_mode: 'Markdown' }).catch(console.error);
+            }
         });
-        console.log(`👻 Ghost alert → ${allowedIds.length} users`);
+        console.log(`👻 Ghost alert triggered`);
     })
     .subscribe();
 
@@ -640,6 +679,80 @@ async function generateBillsPDFBuffer(targetDate = new Date()) {
         doc.text('TOTAL:', 16, y);
         doc.text(`Rs. ${Math.floor(bill.total_amount || bill.total || 0)}`, pageW - 16, y, { align: 'right' });
         y += 10;
+    });
+
+    // Bottom border
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, y, pageW - 14, y);
+
+    return Buffer.from(doc.output('arraybuffer'));
+}
+
+async function generateGhostBillsPDFBuffer(targetDate = new Date()) {
+    const todayDisplay = format(targetDate, 'dd MMM yyyy');
+    const istMidnight = new Date(targetDate);
+    istMidnight.setHours(0, 0, 0, 0); 
+    const startISO = istMidnight.toISOString();
+    const endISO = new Date(istMidnight.getTime() + 86400000).toISOString();
+
+    const { data: ghosts } = await supabase
+        .from('unbilled_events').select('*')
+        .gte('created_at', startISO)
+        .lt('created_at', endISO)
+        .order('created_at', { ascending: true });
+
+    const dayGhosts = ghosts || [];
+    if (dayGhosts.length === 0) throw new Error('No ghost sales found for today.');
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 15;
+
+    // Cover Header
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageW, 25, 'F');
+    doc.setTextColor(239, 68, 68); // Red color for ghost sales
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SANKET CHICKEN SHOP', pageW / 2, 12, { align: 'center' });
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Ghost Sales Batch Export — ${todayDisplay}`, pageW / 2, 19, { align: 'center' });
+
+    y = 35;
+
+    dayGhosts.forEach((ghost) => {
+        if (y > 250) { doc.addPage(); y = 15; }
+
+        const ghostTime = ghost.created_at ? format(new Date(ghost.created_at), 'hh:mm:ss a') : '';
+        const ghostIdShort = ghost.id.substring(0, 8).toUpperCase();
+
+        // Top border
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.5);
+        doc.line(14, y, pageW - 14, y);
+        y += 6;
+
+        // Receipt header
+        doc.setFont('courier', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(239, 68, 68); // Red color
+        doc.text(`GHOST EVENT #${ghostIdShort}`, 16, y);
+        doc.setFont('courier', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text(ghostTime, pageW - 16, y, { align: 'right' });
+        y += 8;
+
+        // Details
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('courier', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Detected Weight: ${ghost.max_weight || 0} kg`, 16, y);
+        y += 6;
+        doc.text(`Duration: ${ghost.duration_seconds || 0} seconds`, 16, y);
+        y += 8;
     });
 
     // Bottom border
