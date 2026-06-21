@@ -173,8 +173,13 @@ const T = {
 //  BOT INIT
 // ═══════════════════════════════════════
 const bot = new TelegramBot(token, { polling: true });
-console.log('🤖 Sanket Telegram Bot starting...');
 
+// Handle polling errors (e.g., Telegram 500 Internal Server Error) to prevent crashes
+bot.on('polling_error', (error) => {
+    console.log(`[Polling Error] ${error.code}: ${error.message}`);
+});
+
+console.log('🤖 Sanket Telegram Bot starting...');
 // Set the menu button to open the Mini App (Web App)
 bot.setChatMenuButton({
     menu_button: JSON.stringify({
@@ -494,19 +499,72 @@ async function getSummary(l) {
 // ═══════════════════════════════════════
 supabase
     .channel('unbilled_events_telegram')
-    .on('postgres_changes', { event: 'INSERT', table: 'unbilled_events' }, (payload) => {
+    .on('postgres_changes', { event: 'INSERT', table: 'unbilled_events' }, async (payload) => {
         const g = payload.new;
         const date = format(new Date(g.created_at), 'dd MMM yyyy');
         const time = format(new Date(g.created_at), 'hh:mm:ss a');
         const wt = g.max_weight || 0;
+        const videoUrl = g.video_url;
 
-        allowedIds.forEach(id => {
+        console.log(`👻 Ghost alert triggered. Processing video...`);
+        let videoBuffer = null;
+        if (videoUrl) {
+            try {
+                const res = await fetch(videoUrl);
+                if (res.ok) {
+                    const arrayBuffer = await res.arrayBuffer();
+                    videoBuffer = Buffer.from(arrayBuffer);
+                    console.log(`Video downloaded successfully (${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB).`);
+                } else {
+                    console.log(`Failed to fetch video: ${res.status}`);
+                }
+            } catch (err) {
+                console.error("Video download error:", err.message);
+            }
+        }
+
+        // Send to all allowed users
+        for (const id of allowedIds) {
             if (!mutedGhosts[id]) {
                 const l = T[getLang(id)];
-                bot.sendMessage(id, l.ghostAlert(date, time, wt), { parse_mode: 'Markdown' }).catch(console.error);
+                try {
+                    if (videoBuffer) {
+                        await bot.sendVideo(id, videoBuffer, {
+                            caption: l.ghostAlert(date, time, wt),
+                            parse_mode: 'Markdown'
+                        }, { filename: `Ghost-${time}.mp4`, contentType: 'video/mp4' });
+                    } else {
+                        await bot.sendMessage(id, l.ghostAlert(date, time, wt), { parse_mode: 'Markdown' });
+                    }
+                } catch (e) {
+                    console.error(`Telegram send error for user ${id}:`, e.message);
+                    bot.sendMessage(id, l.ghostAlert(date, time, wt) + '\n\n_(Video attachment failed)_', { parse_mode: 'Markdown' }).catch(console.error);
+                }
             }
-        });
-        console.log(`👻 Ghost alert triggered`);
+        }
+
+        // Auto-delete video from Supabase after sending it to Telegram
+        if (videoBuffer) {
+            try {
+                const urlParts = videoUrl.split('/object/public/');
+                if (urlParts.length === 2) {
+                    const pathWithBucket = urlParts[1];
+                    const slashIdx = pathWithBucket.indexOf('/');
+                    const bucket = pathWithBucket.slice(0, slashIdx);
+                    const filePath = pathWithBucket.slice(slashIdx + 1);
+                    
+                    const { error: delErr } = await supabase.storage.from(bucket).remove([filePath]);
+                    if (!delErr) {
+                        await supabase.from('unbilled_events').update({ video_url: null }).eq('id', g.id);
+                        console.log(`Auto-deleted ghost video from Supabase cloud to free up space.`);
+                    } else {
+                        console.error(`Failed to delete from storage:`, delErr.message);
+                    }
+                }
+            } catch (err) {
+                console.error("Auto-delete error:", err.message);
+            }
+        }
     })
     .subscribe();
 
