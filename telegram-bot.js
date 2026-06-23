@@ -1,3 +1,4 @@
+process.env.TZ = 'Asia/Kolkata';
 const TelegramBot = require('node-telegram-bot-api');
 const { supabase } = require('./supabase');
 const { format, startOfDay } = require('date-fns');
@@ -1009,3 +1010,4 @@ bot.onText(/^\/report(?:\s+(.*))?$/, async (msg, match) => {
 });
 
 console.log('✅ Sanket Telegram Bot is ONLINE & listening for Ghost Sales!');
+
