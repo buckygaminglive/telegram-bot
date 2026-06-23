@@ -56,11 +56,11 @@ const T = {
         btnSales: '💰 Today\'s Sales',
         btnWeight: '⚖️ Kg Sold',
         btnUnpaid: '🧾 Unpaid Bills',
-        btnGhosts: '👻 Ghost Sales',
+        btnGhosts: '📦 Auto Weight Bills',
         btnSummary: '📊 Full Summary',
         btnChangePrice: '✏️ Change Price',
         btnTodayBills: '🧾 Today\'s Bills PDF',
-        btnGhostBills: '👻 Ghost Sales PDF',
+        btnGhostBills: '📦 Auto Bills PDF',
         btnMute: '🔕 Mute Alerts',
         btnUnmute: '🔔 Unmute Alerts',
         btnLang: '🇮🇳 मराठी',
@@ -82,7 +82,7 @@ const T = {
             `💸  Total:   *₹${Math.floor(amt)}*`,
 
         ghosts: (n) =>
-            `👻  *GHOST SALES TODAY*\n━━━━━━━━━━━━━━━━━\n\n` +
+            `📦  *AUTO WEIGHT BILLS TODAY*\n━━━━━━━━━━━━━━━━━\n\n` +
             `🚨  Count:   *${n}*`,
 
         summary: (s, b, kg, u, uc, g, time) =>
@@ -90,18 +90,15 @@ const T = {
             `💰  Sales:       *₹${Math.floor(s)}*  (${b} bills)\n` +
             `⚖️  Weight:     *${kg.toFixed(3)} kg*\n` +
             `🧾  Unpaid:     *₹${Math.floor(u)}*  (${uc} bills)\n` +
-            `👻  Ghost:       *${g}*\n\n` +
+            `📦  Auto Bills:  *${g}*\n\n` +
             `━━━━━━━━━━━━━━━━━\n` +
             `🕐  _${time}_`,
 
         ghostAlert: (date, time, wt) =>
-            `\n🚨🚨🚨🚨🚨🚨🚨🚨🚨\n\n` +
-            `     *GHOST SALE DETECTED!*\n\n` +
+            `\n📦  *Automatic Weight Bill*\n━━━━━━━━━━━━━━━━━\n\n` +
             `📅  Date:     *${date}*\n` +
             `⏰  Time:     *${time}*\n` +
-            `⚖️  Weight:  *${wt} kg*\n\n` +
-            `_⚠️ Review security footage!_\n\n` +
-            `🚨🚨🚨🚨🚨🚨🚨🚨🚨`,
+            `⚖️  Weight:  *${wt} kg*\n`,
 
         errSales: '❌ Error fetching sales.', errWeight: '❌ Error fetching weight.',
         errUnpaid: '❌ Error fetching unpaid.', errGhosts: '❌ Error fetching ghosts.',
@@ -118,11 +115,11 @@ const T = {
         btnSales: '💰 आजची विक्री',
         btnWeight: '⚖️ किलो विकले',
         btnUnpaid: '🧾 उधारी',
-        btnGhosts: '👻 घोस्ट सेल',
+        btnGhosts: '📦 ऑटोमॅटिक वेट बिले',
         btnSummary: '📊 संपूर्ण सारांश',
         btnChangePrice: '✏️ भाव बदला',
         btnTodayBills: '🧾 आजची बिले PDF',
-        btnGhostBills: '👻 घोस्ट सेल PDF',
+        btnGhostBills: '📦 ऑटो बिले PDF',
         btnMute: '🔕 अलर्ट बंद करा',
         btnUnmute: '🔔 अलर्ट चालू करा',
         btnLang: '🇬🇧 English',
@@ -143,7 +140,7 @@ const T = {
             `💸  एकूण:   *₹${Math.floor(amt)}*`,
 
         ghosts: (n) =>
-            `👻  *आजचे घोस्ट सेल*\n━━━━━━━━━━━━━━━━━\n\n` +
+            `📦  *आजचे ऑटोमॅटिक वेट बिले*\n━━━━━━━━━━━━━━━━━\n\n` +
             `🚨  संख्या:  *${n}*`,
 
         summary: (s, b, kg, u, uc, g, time) =>
@@ -151,18 +148,15 @@ const T = {
             `💰  विक्री:     *₹${Math.floor(s)}*  (${b} बिले)\n` +
             `⚖️  वजन:      *${kg.toFixed(3)} किलो*\n` +
             `🧾  उधारी:     *₹${Math.floor(u)}*  (${uc} बिले)\n` +
-            `👻  घोस्ट:     *${g}*\n\n` +
+            `📦  ऑटो बिले:   *${g}*\n\n` +
             `━━━━━━━━━━━━━━━━━\n` +
             `🕐  _${time}_`,
 
         ghostAlert: (date, time, wt) =>
-            `\n🚨🚨🚨🚨🚨🚨🚨🚨🚨\n\n` +
-            `     *घोस्ट सेल सापडले!*\n\n` +
+            `\n📦  *ऑटोमॅटिक वेट बिल*\n━━━━━━━━━━━━━━━━━\n\n` +
             `📅  तारीख:   *${date}*\n` +
             `⏰  वेळ:       *${time}*\n` +
-            `⚖️  वजन:    *${wt} किलो*\n\n` +
-            `_⚠️ कृपया सुरक्षा कॅमेरा तपासा._\n\n` +
-            `🚨🚨🚨🚨🚨🚨🚨🚨🚨`,
+            `⚖️  वजन:    *${wt} किलो*\n`,
 
         errSales: '❌ विक्री माहिती चूक.', errWeight: '❌ वजन माहिती चूक.',
         errUnpaid: '❌ उधारी माहिती चूक.', errGhosts: '❌ घोस्ट सेल माहिती चूक.',
@@ -393,9 +387,9 @@ bot.on('callback_query', async (query) => {
             bot.sendMessage(id, lang === 'mr' ? `⏳ घोस्ट सेल PDF तयार करत आहे...` : `⏳ Generating ghost sales PDF...`);
             try {
                 const pdfBuffer = await generateGhostBillsPDFBuffer(targetDate);
-                const filename = `Sanket-Ghosts-${format(targetDate, 'dd-MMM-yyyy')}.pdf`;
+                const filename = `Sanket-Auto-Bills-${format(targetDate, 'dd-MMM-yyyy')}.pdf`;
                 await bot.sendDocument(id, pdfBuffer, {
-                    caption: `👻 ${lang === 'mr' ? 'घोस्ट सेल' : "Ghost Sales"} — ${format(targetDate, 'dd MMM yyyy')}`
+                    caption: `📦 ${lang === 'mr' ? 'ऑटोमॅटिक वेट बिले' : "Auto Weight Bills"} — ${format(targetDate, 'dd MMM yyyy')}`
                 }, {
                     filename,
                     contentType: 'application/pdf'
@@ -410,8 +404,8 @@ bot.on('callback_query', async (query) => {
             mutedGhosts[id] = !mutedGhosts[id];
             saveJSON(muteGhostsFile, mutedGhosts);
             const msgText = mutedGhosts[id] 
-                ? (lang === 'mr' ? '🔕 घोस्ट सेल अलर्ट बंद केले आहेत.' : '🔕 Ghost sale alerts are now MUTED.')
-                : (lang === 'mr' ? '🔔 घोस्ट सेल अलर्ट चालू केले आहेत.' : '🔔 Ghost sale alerts are now UNMUTED.');
+                ? (lang === 'mr' ? '🔕 ऑटोमॅटिक बिले अलर्ट बंद केले आहेत.' : '🔕 Auto weight bills alerts are now MUTED.')
+                : (lang === 'mr' ? '🔔 ऑटोमॅटिक बिले अलर्ट चालू केले आहेत.' : '🔔 Auto weight bills alerts are now UNMUTED.');
             bot.sendMessage(id, msgText);
             await sendDashboardMenu(id, lang);
             return;
@@ -769,14 +763,14 @@ async function generateGhostBillsPDFBuffer(targetDate = new Date()) {
     // Cover Header
     doc.setFillColor(15, 23, 42);
     doc.rect(0, 0, pageW, 25, 'F');
-    doc.setTextColor(239, 68, 68); // Red color for ghost sales
+    doc.setTextColor(59, 130, 246); // Blue color for auto weight bills
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text('SANKET CHICKEN SHOP', pageW / 2, 12, { align: 'center' });
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Ghost Sales Batch Export — ${todayDisplay}`, pageW / 2, 19, { align: 'center' });
+    doc.text(`Automatic Weight Bills Batch Export — ${todayDisplay}`, pageW / 2, 19, { align: 'center' });
 
     y = 35;
 
@@ -795,8 +789,8 @@ async function generateGhostBillsPDFBuffer(targetDate = new Date()) {
         // Receipt header
         doc.setFont('courier', 'bold');
         doc.setFontSize(12);
-        doc.setTextColor(239, 68, 68); // Red color
-        doc.text(`GHOST EVENT #${ghostIdShort}`, 16, y);
+        doc.setTextColor(59, 130, 246); // Blue color
+        doc.text(`AUTO BILL #${ghostIdShort}`, 16, y);
         doc.setFont('courier', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(100, 116, 139);
