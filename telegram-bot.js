@@ -525,7 +525,10 @@ supabase
                     if (videoBuffer) {
                         await bot.sendVideo(id, videoBuffer, {
                             caption: l.ghostAlert(date, time, wt),
-                            parse_mode: 'Markdown'
+                            parse_mode: 'Markdown',
+                            width: 854,
+                            height: 480,
+                            supports_streaming: true
                         }, { filename: `Ghost-${time}.mp4`, contentType: 'video/mp4' });
                     } else {
                         await bot.sendMessage(id, l.ghostAlert(date, time, wt), { parse_mode: 'Markdown' });
